@@ -6,15 +6,16 @@ filterEMPTY <- function(x) {
 }
 
 #' checkRanges
-#' Check the ranges element, for Date objects
+#' Check the ranges element, for Date or POSIX objects
 #' @param ranges The list of ranges
 checkRanges <- function(ranges) {
   cls <- lapply(ranges, class)
-  if (!all(unlist(cls) %in% c("Date","POSIXct","POSIXt","POSIXlt", "numeric"))) {
-    stop("All elements of `ranges` must be of class:\n",
-         "`Date`, `POSIXct`, `POSIXlt`, `POSIXt` or `numeric`.")
+  if (!all(unlist(cls) %in% c("Date", "POSIXct", "POSIXt", "POSIXlt"))) {
+    stop(
+      "All elements of `ranges` must be of class:\n",
+      "`Date`, `POSIXct`, `POSIXlt` or `POSIXt`."
+    )
   } else {
-    ranges <- lapply(ranges, as.Date, origin = "1970-01-01")
     ranges <- lapply(ranges, as.character)
   }
   ranges
@@ -24,13 +25,19 @@ checkRanges <- function(ranges) {
 #' Check the maxSpan element, for Time objects
 #' @param maxSpan The list of ranges
 checkMaxSpan <- function(maxSpan) {
-  if (!is.list(maxSpan) && length(maxSpan) == 1)
+  if (!is.list(maxSpan) && length(maxSpan) == 1) {
     stop("`maxSpan` must be a named list with a numeric value.")
-  choicesmaxspan <- c("milliseconds","seconds","minutes",
-                      "days","months","years")
-  if (!names(maxSpan) %in% choicesmaxspan)
-    stop("The valid names for `maxSpan` are:\n",
-         paste(choicesmaxspan, collapse = ", "))
+  }
+  choicesmaxspan <- c(
+    "milliseconds", "seconds", "minutes",
+    "days", "months", "years"
+  )
+  if (!names(maxSpan) %in% choicesmaxspan) {
+    stop(
+      "The valid names for `maxSpan` are:\n",
+      paste(choicesmaxspan, collapse = ", ")
+    )
+  }
 }
 
 #' makeInput
@@ -62,10 +69,9 @@ makeInput <- function(label, inputId, class, icon, style, options) {
 #' @param label The label of the daterangepicker
 #' @param inputId The inputId of the daterangepicker
 makeLabel <- function(label, inputId) {
-  if (!is.null(label)) {
-    tags$label(label, class = "control-label",
-               class = if (is.null(label)) "shiny-label-null", `for` = inputId)
-  } else {
+  if (is.null(label)) {
     NULL
+  } else {
+    tags$label(label, class = "control-label", `for` = inputId)
   }
 }

@@ -13,16 +13,16 @@ $.extend(DateRangePickerBinding, {
     }
 
     // Adapt Ranges, so moment.js can read the Dates
-    if (options.ranges !== undefined || options.ranges !== null) {
-      for (var key in options.ranges) {
-    		if (typeof options.ranges[key] === "string") {
-    		  options.ranges[key] = [moment(options.ranges[key]), moment(options.ranges[key])];
-    		} else {
-    		  for (var i in [0,1]) {
-    		    options.ranges[key].push(moment(options.ranges[key][0]));
-    		    options.ranges[key].shift();
-    		  }
-    		}
+    // Also, use rangeNames as keys
+    var ranges = {}
+    if (options.ranges !== undefined && options.ranges !== null &&
+        options.rangeNames !== undefined && options.rangeNames !== null) {
+      for (var i in options.ranges) {
+        if (typeof options.ranges[i] === "string") {
+          ranges[options.rangeNames[i]] = [moment(options.ranges[i]), moment(options.ranges[i])];
+        } else {
+          ranges[options.rangeNames[i]] = [moment(options.ranges[i][0]), moment(options.ranges[i][1])];
+        }
       }
     }
 
@@ -52,7 +52,7 @@ $.extend(DateRangePickerBinding, {
       linkedCalendars: options.linkedCalendars !== undefined ? options.linkedCalendars : true,
       autoUpdateInput: options.autoUpdateInput ? options.autoUpdateInput : true,
       alwaysShowCalendars: options.alwaysShowCalendars !== undefined ? options.alwaysShowCalendars : false,
-      ranges: options.ranges ? options.ranges : undefined,
+      ranges: options.ranges ? ranges : undefined,
       opens:  options.opens ? options.opens : "right",
       drops:  options.drops ? options.drops : "down",
 
@@ -70,6 +70,7 @@ $.extend(DateRangePickerBinding, {
     // Get start/end time
     start = $(el).data("daterangepicker").startDate;
     end = $(el).data("daterangepicker").endDate;
+
     // If timePicker is true, we return a POSIX otherwise a Date
     if ($(el).data("daterangepicker").timePicker === true) {
       // Make a Timestamp
@@ -99,12 +100,6 @@ $.extend(DateRangePickerBinding, {
       callback();
     });
     $(el).on("hide.daterangepicker", function(event) {
-      callback();
-    });
-    $(el).on("showCalendar.daterangepicker", function(event) {
-      callback();
-    });
-    $(el).on("hideCalendar.daterangepicker", function(event) {
       callback();
     });
     $(el).on("apply.daterangepicker", function(event) {
@@ -167,6 +162,75 @@ $.extend(DateRangePickerBinding, {
     if (data.hasOwnProperty("maxDate")) {
       pickerdata.maxDate = moment(data.maxDate);
     }
+
+    // Update style
+    if (data.hasOwnProperty("style")) {
+      $("#"+data.id).attr("style", data.style);
+    }
+    // Update ranges
+    if (data.hasOwnProperty("ranges") && data.hasOwnProperty("rangeNames")) {
+      var ranges = {}
+      if (data.ranges !== undefined && data.ranges !== null &&
+          data.rangeNames !== undefined && data.rangeNames !== null) {
+        for (var i in data.ranges) {
+          if (typeof data.ranges[i] === "string") {
+            ranges[data.rangeNames[i]] = [moment(data.ranges[i]), moment(data.ranges[i])];
+          } else {
+            ranges[data.rangeNames[i]] = [moment(data.ranges[i][0]), moment(data.ranges[i][1])];
+          }
+        }
+      }
+      var pickerRanges = {}
+      for (range in ranges) {
+        start = ranges[range][0];
+        end = ranges[range][1];
+
+        // If the start or end date exceed those allowed by the minDate or maxSpan
+        // options, shorten the range to the allowable period.
+        if (pickerdata.minDate && start.isBefore(pickerdata.minDate))
+          start = pickerdata.minDate.clone();
+
+        var maxDate = pickerdata.maxDate;
+        if (pickerdata.maxSpan && maxDate && start.clone().add(pickerdata.maxSpan).isAfter(maxDate))
+          maxDate = start.clone().add(pickerdata.maxSpan);
+        if (maxDate && end.isAfter(maxDate))
+          end = maxDate.clone();
+
+        // If the end of the range is before the minimum or the start of the range is
+        // after the maximum, don't display pickerdata range option at all.
+        if ((pickerdata.minDate && end.isBefore(pickerdata.minDate, pickerdata.timepicker ? 'minute' : 'day'))
+            || (maxDate && start.isAfter(maxDate, pickerdata.timepicker ? 'minute' : 'day'))) {
+          continue;
+        }
+
+        //Support unicode chars in the range names.
+        var elem = document.createElement('textarea');
+        elem.innerHTML = range;
+        var rangeHtml = elem.value;
+        pickerRanges[rangeHtml] = [start, end];
+      }
+      pickerdata.ranges = pickerRanges
+      var list = '<ul>';
+      for (range in pickerdata.ranges) {
+          list += '<li data-range-key="' + range + '">' + range + '</li>';
+      }
+      if (pickerdata.showCustomRangeLabel) {
+          list += '<li data-range-key="' + pickerdata.locale.customRangeLabel + '">' + pickerdata.locale.customRangeLabel + '</li>';
+      }
+      list += '</ul>';
+      pickerdata.container.find('.ranges ul').remove()
+      pickerdata.container.find('.ranges').prepend(list);
+    }
+    // Update class
+    if (data.hasOwnProperty("class")) {
+      $("#"+data.id).addClass(data.class);
+    }
+    /*
+    // Update language - Not working - locale is set globally for moment.js
+    if (data.hasOwnProperty("language")) {
+      moment.locale(data.language);
+    }
+    */
 
     // Update options
     if (data.hasOwnProperty("options")) {
